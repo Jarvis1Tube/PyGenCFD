@@ -2,6 +2,8 @@ from generated.UI import Ui_MainWindow
 
 from PyQt5 import QtWidgets
 
+import models
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -12,6 +14,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def _setup_events(self):
         self.ui.GenerateCodeButton.clicked.connect(self.GenerateCode)
+
+        self.ui.DimensionsCountSpin.valueChanged.connect(self.SetUpCoordinateSystem)
+        self.ui.IsStationaryCheckBox.stateChanged.connect(self.SetUpCoordinateSystem)
+
+    def SetUpCoordinateSystem(self):
+        dimension_count = int(self.ui.DimensionsCountSpin.value())
+        is_stationary = bool(self.ui.IsStationaryCheckBox.isChecked())
+
+        coordinate_systems = models.CoordinateSystem.filtered(
+            dimension_count, is_stationary
+        )
+
+        self.ui.CoordinateSystemCombo.clear()
+        self.ui.CoordinateSystemCombo.addItems([cs.value for cs in coordinate_systems])
 
     def GenerateCode(self):
         info_mbox = QtWidgets.QMessageBox(self)
@@ -24,3 +40,6 @@ class MainWindow(QtWidgets.QMainWindow):
             """
         )
         info_mbox.show()
+
+        equation_text: str = self.ui.EquationText.toPlainText()
+        print(equation_text)
