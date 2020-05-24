@@ -33,5 +33,5 @@ make
 
 ## Running (Запуск)
 ```
-python3 ./src/main_ui.py
+python3 ./src/start_ui.py
 ```
