@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1009</width>
-    <height>978</height>
+    <width>901</width>
+    <height>1075</height>
    </rect>
   </property>
   <property name="font">
@@ -19,219 +19,217 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="MainVerticals">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <layout class="QVBoxLayout" name="textContainer">
-        <item>
-         <widget class="QFrame" name="frame">
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <item>
-            <widget class="QGroupBox" name="equationGroupText">
-             <property name="title">
-              <string>Уравнение</string>
+     <widget class="QFrame" name="ConditionsContainer">
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QGroupBox" name="EquationGroup">
+         <property name="title">
+          <string>Уравнение</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QPlainTextEdit" name="EquationText">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>100</height>
+             </size>
+            </property>
+            <property name="plainText">
+             <string>\frac{\partial u}{\partial t} = \frac{\partial^2 }{\partial^2 x} </string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="DimensionsGroup">
+         <property name="title">
+          <string>Пространство решения</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QLabel" name="DimensionsCountLabel">
+            <property name="text">
+             <string>Пространственных измерений</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="DimensionsCountSpin">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>10</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="CoordinateSystemLabel">
+            <property name="text">
+             <string>Система координат</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="CoordinateSystemCombo">
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="currentText">
+             <string>Xt</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Xt</string>
              </property>
-             <layout class="QVBoxLayout" name="verticalLayout_4">
-              <item>
-               <widget class="QPlainTextEdit" name="plainTextEdit">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>100</height>
-                 </size>
-                </property>
-                <property name="plainText">
-                 <string>\frac{\partial u}{\partial t} = \frac{\partial^2 }{\partial^2 x} </string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="groupBox_5">
-             <property name="title">
-              <string>Пространство решения</string>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>Пространственных измерений</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="dimensionSpinBox">
-                <property name="maximumSize">
-                 <size>
-                  <width>50</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="minimum">
-                 <number>1</number>
-                </property>
-                <property name="maximum">
-                 <number>10</number>
-                </property>
-                <property name="value">
-                 <number>1</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label_3">
-                <property name="text">
-                 <string>Система координат</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="comboBox">
-                <property name="maximumSize">
-                 <size>
-                  <width>100</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="currentText">
-                 <string>Xt</string>
-                </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="IsStationaryCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Стационарная задача</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="ConditionsGroup">
+         <property name="title">
+          <string/>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_9">
+          <item>
+           <widget class="QGroupBox" name="BoudaryConditionsGroup">
+            <property name="title">
+             <string>Граничные условия</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0">
+              <widget class="QGroupBox" name="XRightConditionGroup">
+               <property name="title">
+                <string>X (правый конец)</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
                 <item>
-                 <property name="text">
-                  <string>Xt</string>
-                 </property>
+                 <widget class="QPlainTextEdit" name="XRightConditionText">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>80</height>
+                   </size>
+                  </property>
+                  <property name="plainText">
+                   <string>u|_{x=\pi} = 1</string>
+                  </property>
+                 </widget>
                 </item>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="checkBox">
-                <property name="layoutDirection">
-                 <enum>Qt::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string>Стационарная задача</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="conditionsGroupText">
-             <property name="title">
-              <string>Граничные условия</string>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-             <property name="checkable">
-              <bool>false</bool>
-             </property>
-             <layout class="QGridLayout" name="gridLayout">
-              <item row="0" column="0">
-               <widget class="QGroupBox" name="groupBox_9">
-                <property name="title">
-                 <string>X (левый конец)</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_12">
-                 <item>
-                  <widget class="QPlainTextEdit" name="plainTextEdit_2">
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>80</height>
-                    </size>
-                   </property>
-                   <property name="plainText">
-                    <string>u|_{x=0} = 0</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QGroupBox" name="groupBox_8">
-                <property name="title">
-                 <string>X (правый конец)</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_11">
-                 <item>
-                  <widget class="QPlainTextEdit" name="plainTextEdit_4">
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>80</height>
-                    </size>
-                   </property>
-                   <property name="plainText">
-                    <string>u|_{x=\pi} = 1</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item row="1" column="0" colspan="2">
-               <widget class="QGroupBox" name="groupBox_4">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>120</height>
-                 </size>
-                </property>
-                <property name="title">
-                 <string>Начальное условие</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_8">
-                 <item>
-                  <widget class="QPlainTextEdit" name="plainTextEdit_8">
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>150</height>
-                    </size>
-                   </property>
-                   <property name="plainText">
-                    <string>u|_{t=0} = \frac{x}{\pi} + 4e^{-9t}sin(3x)</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="latexContainer"/>
-      </item>
-     </layout>
+               </layout>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QGroupBox" name="XLeftConditionGroup">
+               <property name="title">
+                <string>X (левый конец)</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_14">
+                <item>
+                 <widget class="QPlainTextEdit" name="XLeftConditionText">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>80</height>
+                   </size>
+                  </property>
+                  <property name="plainText">
+                   <string>u|_{x=0} = 0</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="InitialConditionGroup">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="title">
+             <string>Начальное условие</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_8">
+             <item>
+              <widget class="QPlainTextEdit" name="InitialConditionText">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>150</height>
+                </size>
+               </property>
+               <property name="plainText">
+                <string>u|_{t=0} = \frac{x}{\pi} + 4e^{-9t}sin(3x)</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
     <item>
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="GenerationOptionsConatiner">
       <property name="minimumSize">
        <size>
         <width>0</width>
@@ -243,7 +241,7 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QFrame" name="frame_2">
+        <widget class="QFrame" name="ParallelModesGroup">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -252,7 +250,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QCheckBox" name="checkBox_2">
+           <widget class="QCheckBox" name="OpenMPCheckBox">
             <property name="font">
              <font>
               <pointsize>16</pointsize>
@@ -264,7 +262,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_3">
+           <widget class="QCheckBox" name="MPICheckBox">
             <property name="font">
              <font>
               <pointsize>16</pointsize>
@@ -279,7 +277,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="frame_4">
+        <widget class="QFrame" name="UniformGridGroup">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -288,7 +286,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="QCheckBox" name="checkBox_4">
+           <widget class="QCheckBox" name="UniformGridCheckBox">
             <property name="font">
              <font>
               <pointsize>16</pointsize>
@@ -300,7 +298,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="frame_3">
+           <widget class="QFrame" name="UniformGridSubGroup">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -309,7 +307,7 @@
             </property>
             <layout class="QGridLayout" name="gridLayout_2">
              <item row="0" column="0">
-              <widget class="QLabel" name="label_4">
+              <widget class="QLabel" name="XGridStepLabel">
                <property name="font">
                 <font>
                  <pointsize>16</pointsize>
@@ -321,14 +319,14 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QDoubleSpinBox" name="doubleSpinBox_2">
+              <widget class="QDoubleSpinBox" name="XGridStepSpin">
                <property name="maximum">
                 <double>9999.000000000000000</double>
                </property>
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="label_5">
+              <widget class="QLabel" name="tGridStepLabel">
                <property name="font">
                 <font>
                  <pointsize>16</pointsize>
@@ -340,7 +338,7 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QDoubleSpinBox" name="doubleSpinBox_3">
+              <widget class="QDoubleSpinBox" name="tGridStepSpin">
                <property name="maximum">
                 <double>9999.000000000000000</double>
                </property>
@@ -353,7 +351,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="frame_6">
+        <widget class="QFrame" name="DynamicGridGroup">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -362,7 +360,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
-           <widget class="QCheckBox" name="checkBox_5">
+           <widget class="QCheckBox" name="DynamicGridCheckBox">
             <property name="font">
              <font>
               <pointsize>16</pointsize>
@@ -374,7 +372,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QFrame" name="frame_5">
+           <widget class="QFrame" name="DynmaicGridSubGroup">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -383,7 +381,7 @@
             </property>
             <layout class="QGridLayout" name="gridLayout_3">
              <item row="0" column="0">
-              <widget class="QLabel" name="label_2">
+              <widget class="QLabel" name="TOLLabel">
                <property name="font">
                 <font>
                  <pointsize>16</pointsize>
@@ -395,7 +393,7 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QDoubleSpinBox" name="doubleSpinBox">
+              <widget class="QDoubleSpinBox" name="TOLSpin">
                <property name="maximum">
                 <double>9999.000000000000000</double>
                </property>
@@ -408,7 +406,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="frame_7">
+        <widget class="QFrame" name="ActionsGroup">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -417,7 +415,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="GenerateCodeButton">
             <property name="text">
              <string>Сгенерировать</string>
             </property>
@@ -449,7 +447,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1009</width>
+     <width>901</width>
      <height>22</height>
     </rect>
    </property>
