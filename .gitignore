@@ -1,4 +1,4 @@
 env/*
 .vscode/*
 .mypy_cache/*
-gen/*
+*gen*

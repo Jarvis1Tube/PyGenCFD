@@ -2,7 +2,7 @@
 
 generate:
 	@echo "RUN GEN"
-	@mkdir -p gen
-	@echo "" > gen/__init__.py
-	@pyuic5 ui.ui -o gen/UI.py
+	@mkdir -p src/gen
+	@echo "" > src/gen/__init__.py
+	@pyuic5 ./src/ui.ui -o src/gen/UI.py
 	@echo "GENERATED SUCCESSFUL"
