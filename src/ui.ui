@@ -153,28 +153,6 @@
              <string>Граничные условия</string>
             </property>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="0" column="0">
-              <widget class="QGroupBox" name="XRightConditionGroup">
-               <property name="title">
-                <string>X (правый конец)</string>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_11">
-                <item>
-                 <widget class="QPlainTextEdit" name="XRightConditionText">
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>80</height>
-                   </size>
-                  </property>
-                  <property name="plainText">
-                   <string>u|_{x=\pi} = 1</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
              <item row="0" column="1">
               <widget class="QGroupBox" name="XLeftConditionGroup">
                <property name="title">
@@ -191,6 +169,28 @@
                   </property>
                   <property name="plainText">
                    <string>u|_{x=0} = 0</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item row="0" column="2">
+              <widget class="QGroupBox" name="XRightConditionGroup">
+               <property name="title">
+                <string>X (правый конец)</string>
+               </property>
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item>
+                 <widget class="QPlainTextEdit" name="XRightConditionText">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>80</height>
+                   </size>
+                  </property>
+                  <property name="plainText">
+                   <string>u|_{x=\pi} = 1</string>
                   </property>
                  </widget>
                 </item>
