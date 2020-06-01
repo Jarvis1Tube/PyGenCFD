@@ -6,12 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>901</width>
+    <width>930</width>
     <height>1075</height>
    </rect>
   </property>
   <property name="font">
    <font>
+    <family>Courier</family>
     <pointsize>16</pointsize>
     <italic>false</italic>
    </font>
@@ -39,7 +40,7 @@
              </size>
             </property>
             <property name="plainText">
-             <string>\frac{\partial u}{\partial t} = \frac{\partial^2 }{\partial^2 x} </string>
+             <string>Eq(Derivative(u,t),Derivative(u, x,x))</string>
             </property>
            </widget>
           </item>
@@ -168,7 +169,7 @@
                    </size>
                   </property>
                   <property name="plainText">
-                   <string>u|_{x=0} = 0</string>
+                   <string>Eq(u(0, t), 0)</string>
                   </property>
                  </widget>
                 </item>
@@ -190,7 +191,7 @@
                    </size>
                   </property>
                   <property name="plainText">
-                   <string>u|_{x=\pi} = 1</string>
+                   <string>Eq(u(pi, t), 1)</string>
                   </property>
                  </widget>
                 </item>
@@ -248,6 +249,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QFrame" name="ParallelModesGroup">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -259,7 +263,9 @@
            <widget class="QCheckBox" name="OpenMPCheckBox">
             <property name="font">
              <font>
+              <family>Courier</family>
               <pointsize>16</pointsize>
+              <italic>false</italic>
              </font>
             </property>
             <property name="text">
@@ -271,7 +277,9 @@
            <widget class="QCheckBox" name="MPICheckBox">
             <property name="font">
              <font>
+              <family>Courier</family>
               <pointsize>16</pointsize>
+              <italic>false</italic>
              </font>
             </property>
             <property name="text">
@@ -284,6 +292,9 @@
        </item>
        <item>
         <widget class="QFrame" name="UniformGridGroup">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -295,7 +306,9 @@
            <widget class="QCheckBox" name="UniformGridCheckBox">
             <property name="font">
              <font>
+              <family>Courier</family>
               <pointsize>16</pointsize>
+              <italic>false</italic>
              </font>
             </property>
             <property name="text">
@@ -316,7 +329,9 @@
               <widget class="QLabel" name="XGridStepLabel">
                <property name="font">
                 <font>
+                 <family>Courier</family>
                  <pointsize>16</pointsize>
+                 <italic>false</italic>
                 </font>
                </property>
                <property name="text">
@@ -335,7 +350,9 @@
               <widget class="QLabel" name="tGridStepLabel">
                <property name="font">
                 <font>
+                 <family>Courier</family>
                  <pointsize>16</pointsize>
+                 <italic>false</italic>
                 </font>
                </property>
                <property name="text">
@@ -358,6 +375,9 @@
        </item>
        <item>
         <widget class="QFrame" name="DynamicGridGroup">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
@@ -369,7 +389,9 @@
            <widget class="QCheckBox" name="DynamicGridCheckBox">
             <property name="font">
              <font>
+              <family>Courier</family>
               <pointsize>16</pointsize>
+              <italic>false</italic>
              </font>
             </property>
             <property name="text">
@@ -390,7 +412,9 @@
               <widget class="QLabel" name="TOLLabel">
                <property name="font">
                 <font>
+                 <family>Courier</family>
                  <pointsize>16</pointsize>
+                 <italic>false</italic>
                 </font>
                </property>
                <property name="text">
@@ -453,38 +477,38 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>901</width>
+     <width>930</width>
      <height>22</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="FileMenu">
     <property name="title">
      <string>Файл</string>
     </property>
-    <addaction name="action_2"/>
+    <addaction name="SaveMenuButton"/>
    </widget>
-   <widget class="QMenu" name="menu_2">
+   <widget class="QMenu" name="ViewMenu">
     <property name="title">
      <string>Вид</string>
     </property>
-    <addaction name="action"/>
-    <addaction name="action_LaTeX"/>
+    <addaction name="ShowTextMenuButton"/>
+    <addaction name="ShowPrettyMenuButton"/>
    </widget>
-   <addaction name="menu"/>
-   <addaction name="menu_2"/>
+   <addaction name="FileMenu"/>
+   <addaction name="ViewMenu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="action">
+  <action name="ShowTextMenuButton">
    <property name="text">
     <string>Показать текст</string>
    </property>
   </action>
-  <action name="action_LaTeX">
+  <action name="ShowPrettyMenuButton">
    <property name="text">
     <string>Показать LaTeX</string>
    </property>
   </action>
-  <action name="action_2">
+  <action name="SaveMenuButton">
    <property name="text">
     <string>Сохранить</string>
    </property>

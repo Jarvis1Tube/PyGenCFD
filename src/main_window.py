@@ -1,10 +1,22 @@
-from typing import List, Optional
+import enum
+import logging
+from typing import List, Optional, Tuple
+
+from PyQt5 import QtWidgets, QtCore
+import sympy
 
 from generated.UI import Ui_MainWindow
 
-from PyQt5 import QtWidgets, QtCore
+import models.coordinate_systems as cs
+from models import problem
 
-import models
+logger = logging.getLogger(__name__)
+
+
+class FormulasState(enum.Enum):
+    Text = "Text"
+    Pretty = "Pretty"
+    Undefined = "Undefined"
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -13,17 +25,36 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_events()
+        self._setup_variables()
 
+    def _setup_variables(self):
+        self.strs_problem_model = problem.ProblemStrs(
+            equation="Eq(Derivative(u,t),Derivative(u, x,x))",
+            L_boundary_conditions=["Eq(u(0, t), 0)"],
+            R_boundary_conditions=["Eq(u(pi, t), 1)"],
+            initial_condition="Eq(u(x, 0), x/pi + 4 * e**(-9*t) * sin(3*t))",
+            dimensions_count=1,
+            is_stationary=False,
+            coordinate_system=cs.CoordinateSystem.Xt,
+        )
+        self.FormulasState = FormulasState.Undefined
+        self.ShowTextAction()
+
+    # region property
     @property
     def Equation(self) -> str:
         return self.ui.EquationText.toPlainText()
 
+    @Equation.setter
+    def Equation(self, val: str):
+        self.ui.EquationText.setPlainText(val)
+
     @property
-    def CoordinateSystemSelected(self) -> Optional[models.CoordinateSystem]:
+    def CurrentCoordinateSystem(self) -> Optional[cs.CoordinateSystem]:
         current_cs = self.ui.CoordinateSystemCombo.currentText()
         if not current_cs:
             return None
-        return models.CoordinateSystem.from_str(current_cs)
+        return cs.CoordinateSystem.from_str(current_cs)
 
     @property
     def DimensionCount(self):
@@ -39,8 +70,27 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
         return self.ui.InitialConditionText.toPlainText()
 
+    @InitialCondition.setter
+    def InitialCondition(self, val: str):
+        self.ui.InitialConditionText.setPlainText(val)
+
     @property
-    def BoundaryConditionsLR(self):
+    def LBoundaryConditions(self) -> List[str]:
+        return self.GetBoundaryConditionsLR()[0]
+
+    @LBoundaryConditions.setter
+    def LBoundaryConditions(self, val: List[str]):
+        self.SetBoundaryConditionsLR(L=val)
+
+    @property
+    def RBoundaryConditions(self) -> List[str]:
+        return self.GetBoundaryConditionsLR()[1]
+
+    @RBoundaryConditions.setter
+    def RBoundaryConditions(self, val: List[str]):
+        self.SetBoundaryConditionsLR(R=val)
+
+    def GetBoundaryConditionsLR(self) -> Tuple[List[str], List[str]]:
         conditions: List[QtWidgets.QGroupBox] = [
             widget
             for widget in self.ui.BoudaryConditionsGroup.children()
@@ -50,11 +100,40 @@ class MainWindow(QtWidgets.QMainWindow):
         for cond_group in conditions:
             cond_text = GetTextFromGroup(cond_group)
             if "левый" in cond_group.title():
-                L.append(cond_text)
+                L.append(cond_text.toPlainText())
             elif "правый" in cond_group.title():
-                R.append(cond_text)
+                R.append(cond_text.toPlainText())
+        if len(L) != len(R):
+            logger.warning("Count of left and right boundary conditions not match")
         return L, R
 
+    def SetBoundaryConditionsLR(self, L=None, R=None) -> Tuple[List[str], List[str]]:
+        insert_col = list(L or R or [])[::-1]
+        search_word = "левый" if L else ("правый" if R else "abracadabra")
+
+        if search_word == "abracadabra":
+            logger.warning("SetBoundaryConditionsLR has no arguments!")
+
+        conditions: List[QtWidgets.QGroupBox] = [
+            widget
+            for widget in self.ui.BoudaryConditionsGroup.children()
+            if type(widget) is not QtWidgets.QGridLayout
+        ]
+
+        if (len(conditions) // 2) != len(insert_col):
+            logger.warning(
+                "Boundary conditions setter has not exact count of conditions"
+            )
+
+        for cond_group in conditions:
+            cond_text = GetTextFromGroup(cond_group)
+            if search_word in cond_group.title():
+                cond_text.setPlainText(insert_col.pop())
+        return L, R
+
+    # endregion property
+
+    # region Events
     def _setup_events(self):
         self.ui.GenerateCodeButton.clicked.connect(self.GenerateCode)
 
@@ -68,8 +147,67 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.CoordinateSystemCombo.currentTextChanged.connect(
             self.SetUpBoundaryConditions
         )
+        self.ui.ShowTextMenuButton.triggered.connect(self.ShowTextAction)
+        self.ui.ShowPrettyMenuButton.triggered.connect(self.ShowPrettyAction)
 
-    def _GenConditionsPlaceHolders(self, coordinate_systems: models.CoordinateSystem):
+    def SetUpBoundaryConditions(self):
+        if self.CurrentCoordinateSystem:
+            self._GenConditionsPlaceHolders(self.CurrentCoordinateSystem)
+        self.ui.InitialConditionGroup.setVisible(not self.IsStationary)
+
+    def SetUpCoordinateSystemCombo(self):
+        coordinate_systems = cs.CoordinateSystem.filtered(
+            self.DimensionCount, self.IsStationary
+        )
+        if len(coordinate_systems) == 0:
+            if self.DimensionCount == 0:
+                self.ui.DimensionsCountSpin.setValue(1)
+            else:
+                self.ui.DimensionsCountSpin.setValue(self.DimensionCount - 1)
+            return
+
+        self.ui.CoordinateSystemCombo.clear()
+        self.ui.CoordinateSystemCombo.addItems([cs.value for cs in coordinate_systems])
+
+    def ShowTextAction(self):
+        if self.FormulasState == FormulasState.Text:
+            return
+
+        self.Equation = self.strs_problem_model.equation
+        self.InitialCondition = self.strs_problem_model.initial_condition
+        self.LBoundaryConditions = self.strs_problem_model.L_boundary_conditions
+        self.RBoundaryConditions = self.strs_problem_model.R_boundary_conditions
+        self.FormulasState = FormulasState.Text
+
+    def ShowPrettyAction(self):
+        if self.FormulasState == FormulasState.Pretty:
+            return
+
+        self.strs_problem_model.equation = self.Equation
+        self.strs_problem_model.initial_condition = self.InitialCondition
+        self.strs_problem_model.L_boundary_conditions = self.LBoundaryConditions
+        self.strs_problem_model.R_boundary_conditions = self.RBoundaryConditions
+
+        sympy_model = problem.ProblemSympy(self.strs_problem_model)
+
+        self.Equation = sympy.pretty(sympy_model.equation)
+        self.InitialCondition = sympy.pretty(sympy_model.initial_condition)
+        self.LBoundaryConditions = [
+            sympy.pretty(cond) for cond in sympy_model.L_boundary_conditions
+        ]
+        self.RBoundaryConditions = [
+            sympy.pretty(cond) for cond in sympy_model.R_boundary_conditions
+        ]
+
+        self.FormulasState = FormulasState.Pretty
+
+    def GenerateCode(self):
+        pass
+
+    # endregion Events
+
+    # region UI logic
+    def _GenConditionsPlaceHolders(self, coordinate_systems: cs.CoordinateSystem):
         for cs_variable in coordinate_systems.value.replace("t", ""):
             for edge_name in ["левый", "правый"]:
                 ConditionGroup = QtWidgets.QGroupBox(self.ui.BoudaryConditionsGroup)
@@ -91,53 +229,14 @@ class MainWindow(QtWidgets.QMainWindow):
         for i, widget in enumerate(widgets):
             coinditions.addWidget(widget, *(i // 2, i % 2))
 
-    def SetUpBoundaryConditions(self):
-        if self.CoordinateSystemSelected:
-            self._GenConditionsPlaceHolders(self.CoordinateSystemSelected)
-        self.ui.InitialConditionGroup.setVisible(not self.IsStationary)
+    def _UpdateProblemModel(self):
+        pass
+        # self.
 
-    def SetUpCoordinateSystemCombo(self):
-        coordinate_systems = models.CoordinateSystem.filtered(
-            self.DimensionCount, self.IsStationary
-        )
-        if len(coordinate_systems) == 0:
-            if self.DimensionCount == 0:
-                self.ui.DimensionsCountSpin.setValue(1)
-            else:
-                self.ui.DimensionsCountSpin.setValue(self.DimensionCount - 1)
-            return
-
-        self.ui.CoordinateSystemCombo.clear()
-        self.ui.CoordinateSystemCombo.addItems([cs.value for cs in coordinate_systems])
-
-    def GenerateCode(self):
-        info_mbox = QtWidgets.QMessageBox(self)
-        info_mbox.setIcon(QtWidgets.QMessageBox.Information)
-        info_mbox.setText(
-            """
-            Hello, I see you want to generate CFD code =)
-            I really want it too!
-            Hope you'll do it in the next version of application.
-            """
-        )
-        info_mbox.show()
-
-        if not self.CoordinateSystemSelected:
-            return
-
-        problem_model = models.ProblemModel(
-            equation=self.Equation,
-            L_boundary_conditions=self.BoundaryConditionsLR[0],
-            R_boundary_conditions=self.BoundaryConditionsLR[1],
-            initial_condition=self.InitialCondition,
-            dimensions_count=self.DimensionCount,
-            is_stationary=self.IsStationary,
-            coordinate_system=self.CoordinateSystemSelected,
-        )
+    #  endregion UI logic
 
 
-def GetTextFromGroup(group: QtWidgets.QGroupBox):
+def GetTextFromGroup(group: QtWidgets.QGroupBox) -> QtWidgets.QPlainTextEdit:
     for child in group.children():
         if hasattr(child, "toPlainText"):
-            return child.toPlainText()
-    return None
+            return child
