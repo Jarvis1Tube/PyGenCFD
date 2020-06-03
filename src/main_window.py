@@ -9,6 +9,7 @@ from generated.UI import Ui_MainWindow
 
 import models.coordinate_systems as cs
 from models import problem
+from codegen.template_gen import gen_template
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._setup_variables()
 
     def _setup_variables(self):
-        self.strs_problem_model = problem.ProblemStrs(
-            equation="Eq(Derivative(u,t),Derivative(u, x,x))",
-            L_boundary_conditions=["Eq(u(0, t), 0)"],
-            R_boundary_conditions=["Eq(u(pi, t), 1)"],
-            initial_condition="Eq(u(x, 0), x/pi + 4 * e**(-9*t) * sin(3*t))",
-            dimensions_count=1,
-            is_stationary=False,
-            coordinate_system=cs.CoordinateSystem.Xt,
-        )
+        self.strs_problem_model = problem.StrsModelsFromLabs["1.1"]
         self.FormulasState = FormulasState.Undefined
         self.ShowTextAction()
 
@@ -107,6 +100,16 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.warning("Count of left and right boundary conditions not match")
         return L, R
 
+    @property
+    def AnalyticalSolution(self) -> Optional[str]:
+        if not self.ui.AnalyticalSolutionGroup.isVisible:
+            return None
+        return self.ui.AnalyticalSolutionPlainText.toPlainText()
+
+    @AnalyticalSolution.setter
+    def AnalyticalSolution(self, val: str):
+        self.ui.AnalyticalSolutionPlainText.setPlainText(val)
+
     def SetBoundaryConditionsLR(self, L=None, R=None) -> Tuple[List[str], List[str]]:
         insert_col = list(L or R or [])[::-1]
         search_word = "левый" if L else ("правый" if R else "abracadabra")
@@ -120,13 +123,17 @@ class MainWindow(QtWidgets.QMainWindow):
             if type(widget) is not QtWidgets.QGridLayout
         ]
 
-        if (len(conditions) // 2) != len(insert_col):
+        if (len(conditions) // 2) != len(
+            insert_col
+        ) and self.FormulasState != FormulasState.Undefined:
             logger.warning(
                 "Boundary conditions setter has not exact count of conditions"
             )
 
         for cond_group in conditions:
             cond_text = GetTextFromGroup(cond_group)
+            if not insert_col:
+                break
             if search_word in cond_group.title():
                 cond_text.setPlainText(insert_col.pop())
         return L, R
@@ -149,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         )
         self.ui.ShowTextMenuButton.triggered.connect(self.ShowTextAction)
         self.ui.ShowPrettyMenuButton.triggered.connect(self.ShowPrettyAction)
+        self.ui.HasAnaliticalCheckBox.stateChanged.connect(self.HasAnalitycalChanched)
 
     def SetUpBoundaryConditions(self):
         if self.CurrentCoordinateSystem:
@@ -166,8 +174,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ui.DimensionsCountSpin.setValue(self.DimensionCount - 1)
             return
 
+        if self.FormulasState == FormulasState.Pretty:
+            self.ShowTextAction()
+
         self.ui.CoordinateSystemCombo.clear()
         self.ui.CoordinateSystemCombo.addItems([cs.value for cs in coordinate_systems])
+
+        self.FormulasState = FormulasState.Undefined
+        self.ShowTextAction()
 
     def ShowTextAction(self):
         if self.FormulasState == FormulasState.Text:
@@ -177,18 +191,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.InitialCondition = self.strs_problem_model.initial_condition
         self.LBoundaryConditions = self.strs_problem_model.L_boundary_conditions
         self.RBoundaryConditions = self.strs_problem_model.R_boundary_conditions
+        self.AnalyticalSolution = self.strs_problem_model.analytical_solution
+
         self.FormulasState = FormulasState.Text
 
     def ShowPrettyAction(self):
         if self.FormulasState == FormulasState.Pretty:
             return
 
-        self.strs_problem_model.equation = self.Equation
-        self.strs_problem_model.initial_condition = self.InitialCondition
-        self.strs_problem_model.L_boundary_conditions = self.LBoundaryConditions
-        self.strs_problem_model.R_boundary_conditions = self.RBoundaryConditions
-
-        sympy_model = problem.ProblemSympy(self.strs_problem_model)
+        self._UpdateStrsProblemModel()
+        try:
+            sympy_model = problem.ProblemSympy(self.strs_problem_model)
+        except Exception as err:
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Warning)
+            mbox.setText(str(err))
+            mbox.show()
+            return
 
         self.Equation = sympy.pretty(sympy_model.equation)
         self.InitialCondition = sympy.pretty(sympy_model.initial_condition)
@@ -198,16 +217,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.RBoundaryConditions = [
             sympy.pretty(cond) for cond in sympy_model.R_boundary_conditions
         ]
+        self.AnalyticalSolution = sympy.pretty(sympy_model.analytical_solution)
 
         self.FormulasState = FormulasState.Pretty
 
+    def HasAnalitycalChanched(self):
+        self.ui.AnalyticalSolutionGroup.isVisible(
+            self.ui.HasAnaliticalCheckBox.isChecked()
+        )
+
     def GenerateCode(self):
-        pass
+        self._UpdateStrsProblemModel()
+        sympy_model = problem.ProblemSympy(self.strs_problem_model)
+        gen_template(sympy_model)
 
     # endregion Events
 
     # region UI logic
     def _GenConditionsPlaceHolders(self, coordinate_systems: cs.CoordinateSystem):
+        coinditions: QtWidgets.QGridLayout = self.ui.BoudaryConditionsGroup.layout()
+        widgets = [
+            w
+            for w in self.ui.BoudaryConditionsGroup.children()
+            if type(w) is not QtWidgets.QGridLayout
+        ]
+        for w in widgets:
+            w.setParent(None)
+
         for cs_variable in coordinate_systems.value.replace("t", ""):
             for edge_name in ["левый", "правый"]:
                 ConditionGroup = QtWidgets.QGroupBox(self.ui.BoudaryConditionsGroup)
@@ -217,21 +253,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 ConditionText.setMaximumSize(QtCore.QSize(16777215, 80))
                 verticalLayout.addWidget(ConditionText)
 
-        coinditions: QtWidgets.QGridLayout = self.ui.BoudaryConditionsGroup.layout()
         widgets = [
             w
             for w in self.ui.BoudaryConditionsGroup.children()
             if type(w) is not QtWidgets.QGridLayout
         ]
-        for i in reversed(range(coinditions.count())):
-            coinditions.itemAt(i).widget().deleteLater()
-
         for i, widget in enumerate(widgets):
             coinditions.addWidget(widget, *(i // 2, i % 2))
 
-    def _UpdateProblemModel(self):
-        pass
-        # self.
+    def _UpdateStrsProblemModel(self):
+        self.strs_problem_model.equation = self.Equation
+        self.strs_problem_model.initial_condition = self.InitialCondition
+        self.strs_problem_model.L_boundary_conditions = self.LBoundaryConditions
+        self.strs_problem_model.R_boundary_conditions = self.RBoundaryConditions
+        self.strs_problem_model.analytical_solution = self.AnalyticalSolution
 
     #  endregion UI logic
 
