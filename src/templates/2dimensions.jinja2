@@ -22,6 +22,8 @@ CONTAINS
 
    {{ code_model.analytical_solution }}
 
+   {{ code_model.initial_condition }}
+
    !-----------------------------------------------------------------------------
 
    SUBROUTINE START
@@ -35,7 +37,7 @@ CONTAINS
 
       DO J = 1, M1
          DO I = 1, L1
-            T0(I, J) = Y(J)
+            T0(I, J) = INITIAL_CONDITION(X(I), Y(J))
             T(I, J) = T0(I, J)
          ENDDO
       ENDDO

@@ -3,24 +3,29 @@ from typing import List
 
 import jinja2
 import sympy
+from sympy.abc import t
 from sympy.utilities.codegen import codegen
 
 from models import coordinate_systems as cs
 from models import problem
 
 
-def coords_to_vars(coordinate_system: cs.CoordinateSystem) -> List[str]:
-    return list(coordinate_system.value.lower())
+def coords_to_vars(coordinate_system: cs.CoordinateSystem) -> List[sympy.Symbol]:
+    return sympy.symbols(list(coordinate_system.value.lower()))
 
 
+# TODO: mode codegen logic to model
 def gen_template(problem_sympy: problem.ProblemSympy):
-    arguments_order = sympy.symbols(coords_to_vars(problem_sympy.coordinate_system))
+    arguments_order = coords_to_vars(problem_sympy.coordinate_system)
+    initial_cond_args = [
+        var for var in coords_to_vars(problem_sympy.coordinate_system) if var != t
+    ]
 
-    with open("fortran_template.jinja2", "r") as f:
+    with open("templates/1dimension.jinja2", "r") as f:
         template = f.read()
     jinja_template = jinja2.Template(template)
 
-    # fortran_analytical_solution
+    # fortran analytical_solution
     [(f_name, f_code), (f_name, f_header)] = codegen(
         ("FAN", problem_sympy.analytical_solution),
         language="F95",
@@ -29,9 +34,18 @@ def gen_template(problem_sympy: problem.ProblemSympy):
     )
     analytical_solution_code = "! generated !\n" + f_code
 
+    # fortran analytical_solution
+    [(f_name, f_code), (f_name, f_header)] = codegen(
+        ("INITIAL_CONDITION", problem_sympy.initial_condition.rhs),
+        language="F95",
+        header=False,
+        argument_sequence=initial_cond_args,
+    )
+    initial_condition_code = "! generated !\n" + f_code
+
     code_model = problem.ProblemStrs(
         equation=str(problem_sympy.equation),
-        initial_condition=str(problem_sympy.initial_condition),
+        initial_condition=initial_condition_code,
         analytical_solution=analytical_solution_code,
         L_boundary_conditions=[
             str(cond) for cond in problem_sympy.L_boundary_conditions

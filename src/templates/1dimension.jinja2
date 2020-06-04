@@ -1,0 +1,186 @@
+
+MODULE VAR   ! Глобальные переменные доступны
+! всем программным единицам, использующим
+! данный модуль.
+   IMPLICIT NONE
+   INTEGER, PARAMETER :: L1 = 7
+   REAL(8), PARAMETER :: eps = 1.D-4, alltime = 10.
+   INTEGER I, L2
+   REAL(8) TIME, DT, DX, XL, XLR, delT, &
+      delT1, AP0, RMAX, RET
+   REAL(8) X(L1), XU(L1), T(L1), T1(L1), T0(L1), &
+      RHO(L1), GAMI(L1), CON(L1), APS(L1), AIP(L1), &
+      AIM(L1), AP(L1), B(L1)
+END MODULE VAR
+
+!============================================
+
+MODULE USER  ! Модуль содержит процедуры,
+! которые изменяются при решении той или иной ! конкретной задачи, т.е.процедуры
+! пользователя.
+CONTAINS
+!--------------------------------------------
+   {{code_model.analytical_solution}}
+
+   {{ code_model.initial_condition }}
+!--------------------------------------------
+   SUBROUTINE START  ! Задаются параметры
+! задачи, начальные условия и стационарные
+! граничные условия первого рода.
+      USE VAR
+      XL = 0.; XLR = 1.
+      CALL GRID(L1, L2, XL, XLR, XU, X)
+      TIME = 0.; DT = 0.1
+      DO I = 1, L1
+         T0(I) = INITIAL_CONDITION(X(I))
+         T(I) = T0(I)
+      END DO
+   END SUBROUTINE START
+!--------------------------------------------
+   SUBROUTINE GAMSOR   ! Задаются плотность,
+! теплопроводность, источниковый член и
+! граничные условия.
+      USE VAR
+      T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
+              (1.+X(L1) - X(L2))
+      DO I = 3, L2
+         GAMI(I) = (T(I) - T(I - 1))*(XU(I) - X(I - 1))/ &
+                   (X(I) - X(I - 1)) + T(I - 1)
+      END DO
+      GAMI(2) = 0.
+      GAMI(L1) = 0.
+      DO I = 2, L2
+         CON(I) = 0.
+         APS(I) = 0.
+         RHO(I) = 1.
+      END DO
+      CON(2) = (X(2) - X(1))
+      APS(2) = -1.
+      CON(L2) = T(L1)*(3.+TIME)/(1.+X(L1) - X(L2))
+      APS(L2) = -T(L1)/(1.+X(L1) - X(L2))
+   END SUBROUTINE GAMSOR
+!--------------------------------------------
+   SUBROUTINE OUTPUT   ! Вывод данных в
+! процессе расчета, вычисление ошибок.
+      USE VAR
+      T(1) = T(2) - (X(2) - X(1))
+      T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
+              (1.+X(L1) - X(L2))
+      delT = 0.
+      delT1 = 0.
+      DO I = 1, L1
+         RET = DABS(T(I) - FAN(X(I), TIME))
+         delT = DMAX1(delT, RET)
+         delT1 = DMAX1(delT1, &
+                       100.*RET/DABS(FAN(X(I), TIME)))
+      END DO
+      WRITE (*, 1)
+      WRITE (1, 1)
+1     FORMAT(5X'TIME', 12X, 'T(5)', 12X, &
+             'TAN(5)', 13X, 'delT', 13X, 'delT1')
+      WRITE (*, 2) TIME, T(5), FAN(X(5), TIME), delT, delT1
+      WRITE (1, 2) TIME, T(5), FAN(X(5), TIME), delT, delT1
+2     FORMAT(1P5E16.6)
+   END SUBROUTINE OUTPUT
+!--------------------------------------------
+   SUBROUTINE ALLFILE   ! Вывод результатов
+!  расчета в файл, для построения графиков.
+      USE VAR
+      OPEN (UNIT=3, FILE='ALL.DAT', STATUS='UNKNOWN')
+      WRITE (3, *) 'VARIABLES="X","T","Ta","delT", &
+         "delT1"'
+      WRITE (3, *) 'ZONE I=12, F=POINT'
+      DO I = 1, L1
+         RET = FAN(X(I), TIME)
+         WRITE (3, '(1P5E15.6)') &
+            X(I), T(I), RET, DABS(T(I) - RET), &
+            100.*DABS((T(I) - RET)/RET)
+      ENDDO
+      ENDFILE 3
+      CLOSE (3)
+   END SUBROUTINE ALLFILE
+END MODULE USER
+!============================================
+PROGRAM COND1   ! Программа численного
+! решения начально-краевых задач для
+!одномерного уравнения теплопроводности.
+   USE VAR
+   USE USER
+   OPEN (UNIT=1, FILE='Q.OUT', STATUS='UNKNOWN')
+   CALL START
+   DO WHILE (TIME <= (alltime - 0.5*DT))
+      TIME = TIME + DT
+      RMAX = 1.
+      DO WHILE (RMAX > eps)
+         T1 = T
+         CALL DIF
+         CALL TDMA
+         CALL RT
+      END DO
+      CALL OUTPUT
+      T0 = T
+   END DO
+   CALL ALLFILE
+END PROGRAM COND1
+!============================================
+SUBROUTINE GRID(L1, L2, XL, XLR, XU, X)
+! Построение равномерной сетки
+   INTEGER L1, L2, I
+   REAL(8) XL, XLR, XU(L1), X(L1), DX
+   L2 = L1 - 1
+   DX = XLR/DBLE(L1 - 2)
+   XU(2) = XL
+   DO I = 3, L1
+      XU(I) = XU(I - 1) + DX
+   END DO
+   X(1) = XU(2)
+   DO I = 2, L2
+      X(I) = 0.5*(XU(I + 1) + XU(I))
+   ENDDO
+   X(L1) = XU(L1)
+END SUBROUTINE GRID
+!============================================
+SUBROUTINE DIF   ! Расчет коэффициентов
+!                  дискретного аналога.
+   USE VAR
+   USE USER
+   CALL GAMSOR
+   DO I = 2, L2
+      AIM(I) = GAMI(I)/(X(I) - X(I - 1))
+      AIP(I) = GAMI(I + 1)/(X(I + 1) - X(I))
+   ENDDO
+   DO I = 2, L2
+      AP0 = RHO(I)*(XU(I + 1) - XU(I))/DT
+      B(I) = CON(I) + AP0*T0(I)
+      AP(I) = -APS(I) + AP0 + AIM(I) + AIP(I)
+   ENDDO
+END SUBROUTINE DIF
+!============================================
+SUBROUTINE TDMA  ! Решение СЛАУ
+!                  методом прогонки.
+   USE VAR
+   REAL(8) DENOM, PT(L1), QT(L1)
+   L2 = L1 - 1
+   PT(1) = 0.
+   QT(1) = T(1)
+   DO I = 2, L2
+      DENOM = AP(I) - PT(I - 1)*AIM(I)
+      PT(I) = AIP(I)/(DENOM + 1.D-30)
+      QT(I) = (B(I) + AIM(I)*QT(I - 1))/ &
+              (DENOM + 1.E-30)
+   ENDDO
+   DO I = L2, 2, -1
+      T(I) = T(I + 1)*PT(I) + QT(I)
+   ENDDO
+END SUBROUTINE TDMA
+!============================================
+SUBROUTINE RT   ! Вычисление параметра в критерии
+!   перехода на следующий временной слой
+   USE VAR
+   RMAX = 0.
+   DO I = 2, L2
+      RMAX = DMAX1(RMAX, DABS(1.-T(I)/T1(I)))
+   ENDDO
+   WRITE (*, *) RMAX
+   WRITE (1, *) RMAX
+END SUBROUTINE RT
