@@ -1,13 +1,12 @@
 import os
 from typing import List
 
-from models import coordinate_systems as cs
-from models import problem
-
-from sympy.utilities.codegen import codegen
-
 import jinja2
 import sympy
+from sympy.utilities.codegen import codegen
+
+from models import coordinate_systems as cs
+from models import problem
 
 
 def coords_to_vars(coordinate_system: cs.CoordinateSystem) -> List[str]:

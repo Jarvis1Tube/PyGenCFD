@@ -1,9 +1,9 @@
 import dataclasses
 from typing import List, Optional
 
-import models.coordinate_systems as cs
-
 import sympy
+
+import models.coordinate_systems as cs
 
 
 @dataclasses.dataclass

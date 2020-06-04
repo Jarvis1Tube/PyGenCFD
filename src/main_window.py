@@ -2,14 +2,14 @@ import enum
 import logging
 from typing import List, Optional, Tuple
 
-from PyQt5 import QtWidgets, QtCore
 import sympy
+from PyQt5 import QtCore, QtWidgets
 
 from generated.UI import Ui_MainWindow
 
 import models.coordinate_systems as cs
-from models import problem
 from codegen.template_gen import gen_template
+from models import problem
 
 logger = logging.getLogger(__name__)
 
