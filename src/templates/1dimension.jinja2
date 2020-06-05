@@ -1,4 +1,7 @@
 
+{% set L_x_cond = code_model.L_boundary_conditions[0] %}
+{% set R_x_cond = code_model.R_boundary_conditions[0] %}
+
 MODULE VAR   ! Глобальные переменные доступны
 ! всем программным единицам, использующим
 ! данный модуль.
@@ -20,44 +23,75 @@ MODULE USER  ! Модуль содержит процедуры,
 ! пользователя.
 CONTAINS
 !--------------------------------------------
-   {{code_model.analytical_solution}}
+   {{ code_model.analytical_solution }}
 
-   {{ code_model.initial_condition }}
+   {{ code_model.initial_condition.func_code }}
+
+    {% if L_x_cond.kind == "First" %}
+        {{ L_x_cond.func_code }}
+    {% endif %}
+    {% if R_x_cond.kind == "First" %}
+        {{ R_x_cond.func_code }}
+    {% endif %}
 !--------------------------------------------
    SUBROUTINE START  ! Задаются параметры
 ! задачи, начальные условия и стационарные
 ! граничные условия первого рода.
       USE VAR
-      XL = 0.; XLR = 1.
+      XL = {{ L_x_cond.axis_point }}; XLR = {{ R_x_cond.axis_point }}
       CALL GRID(L1, L2, XL, XLR, XU, X)
-      TIME = 0.; DT = 0.1
+      TIME = {{ code_model.initial_condition.axis_point }}; DT = 0.1
       DO I = 1, L1
          T0(I) = INITIAL_CONDITION(X(I))
          T(I) = T0(I)
       END DO
+
+      {% if L_x_cond.kind == "First" %}
+      T(1) = {{ L_x_cond.func_name }}(TIME)
+      {% endif %}
+      {% if R_x_cond.kind == "First" %}
+      T(L1) = {{ R_x_cond.func_name }}(TIME)
+      {% endif %}
+
    END SUBROUTINE START
 !--------------------------------------------
    SUBROUTINE GAMSOR   ! Задаются плотность,
 ! теплопроводность, источниковый член и
 ! граничные условия.
       USE VAR
-      T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
-              (1.+X(L1) - X(L2))
+      {# ! правая сторона ГУ-2 го рода #}
+      {# T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
+              (1.+X(L1) - X(L2)) #}
+
+      {% set start_inx = 1 if L_x_cond.kind == "First" else 3 %}
+      {% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
+      DO I = {{ start_inx }}, {{ end_inx }}
+         GAMI(I) = {{ code_model.Gam['x'] }}
+      END DO
+
       DO I = 3, L2
          GAMI(I) = (T(I) - T(I - 1))*(XU(I) - X(I - 1))/ &
                    (X(I) - X(I - 1)) + T(I - 1)
       END DO
+
+      {# ! Для ГУ-2го рода
       GAMI(2) = 0.
-      GAMI(L1) = 0.
+      GAMI(L1) = 0. #}
+
       DO I = 2, L2
          CON(I) = 0.
          APS(I) = 0.
          RHO(I) = 1.
       END DO
-      CON(2) = (X(2) - X(1))
-      APS(2) = -1.
-      CON(L2) = T(L1)*(3.+TIME)/(1.+X(L1) - X(L2))
-      APS(L2) = -T(L1)/(1.+X(L1) - X(L2))
+
+{#      ! левая сторона ГУ-2 го рода#}
+{#      CON(2) = (X(2) - X(1))#}
+{#      APS(2) = -1.#}
+
+{#      ! правая сторона ГУ-2 го рода#}
+{#      CON(L2) = T(L1)*(3.+TIME)/(1.+X(L1) - X(L2))#}
+{#      APS(L2) = -T(L1)/(1.+X(L1) - X(L2))#}
+
    END SUBROUTINE GAMSOR
 !--------------------------------------------
    SUBROUTINE OUTPUT   ! Вывод данных в

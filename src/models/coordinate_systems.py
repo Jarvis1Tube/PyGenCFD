@@ -1,6 +1,8 @@
 import enum
 from typing import List
 
+import sympy
+
 
 @enum.unique
 class CoordinateSystem(enum.Enum):
@@ -42,3 +44,6 @@ class CoordinateSystem(enum.Enum):
         if len(coordinate_systems) == 0:
             raise ValueError(f"{str_value} is not CoordinateSystem")
         return coordinate_systems[0]
+
+    def to_vars(self) -> List[sympy.Symbol]:
+        return sympy.symbols(list(self.value.lower()))
