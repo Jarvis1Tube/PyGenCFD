@@ -47,9 +47,11 @@ CONTAINS
       END DO
 
       {% if L_x_cond.kind == "First" %}
+      ! ГУ-1го рода на левой стороне по оси X
       T(1) = {{ L_x_cond.func_name }}(TIME)
       {% endif %}
       {% if R_x_cond.kind == "First" %}
+      ! ГУ-1го рода на правой стороне по оси X
       T(L1) = {{ R_x_cond.func_name }}(TIME)
       {% endif %}
 
@@ -63,15 +65,11 @@ CONTAINS
       {# T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
               (1.+X(L1) - X(L2)) #}
 
-      {% set start_inx = 1 if L_x_cond.kind == "First" else 3 %}
+      {% set start_inx = 2 if L_x_cond.kind == "First" else 3 %}
       {% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
-      DO I = {{ start_inx }}, {{ end_inx }}
-         GAMI(I) = {{ code_model.Gam['x'] }}
-      END DO
 
-      DO I = 3, L2
-         GAMI(I) = (T(I) - T(I - 1))*(XU(I) - X(I - 1))/ &
-                   (X(I) - X(I - 1)) + T(I - 1)
+      DO I = {{ start_inx }}, {{ end_inx }}
+         GAMI(I) = {{ code_model.Gam['x'] }} * (XU(I) - X(I - 1)) / (X(I) - X(I - 1))
       END DO
 
       {# ! Для ГУ-2го рода
