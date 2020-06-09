@@ -6,12 +6,13 @@ MODULE VAR   ! Глобальные переменные доступны
 ! всем программным единицам, использующим
 ! данный модуль.
    IMPLICIT NONE
-   INTEGER, PARAMETER :: L1 = 7
+   INTEGER, PARAMETER :: L1 = 21
    REAL(8), PARAMETER :: eps = 1.D-4, alltime = 10.
    INTEGER I, L2
    REAL(8) TIME, DT, DX, XL, XLR, delT, &
       delT1, AP0, RMAX, RET
-   REAL(8) X(L1), XU(L1), T(L1), T1(L1), T0(L1), &
+   REAL(8) X(L1), XU(L1)
+   REAL(8) T(L1), T1(L1), T0(L1), &
       RHO(L1), GAMI(L1), CON(L1), APS(L1), AIP(L1), &
       AIM(L1), AP(L1), B(L1)
 END MODULE VAR
@@ -34,6 +35,20 @@ CONTAINS
         {{ R_x_cond.func_code }}
     {% endif %}
 !--------------------------------------------
+   SUBROUTINE BOUND_INIT
+      USE VAR
+   {% if L_x_cond.kind == "First" %}
+      ! ГУ-1го рода на левой стороне по оси X
+      T(1) = {{ L_x_cond.func_name }}(TIME)
+   {% endif %}
+
+   {% if R_x_cond.kind == "First" %}
+      ! ГУ-1го рода на правой стороне по оси X
+      T(L1) = {{ R_x_cond.func_name }}(TIME)
+   {% endif %}
+
+   END SUBROUTINE BOUND_INIT
+
    SUBROUTINE START  ! Задаются параметры
 ! задачи, начальные условия и стационарные
 ! граничные условия первого рода.
@@ -45,15 +60,6 @@ CONTAINS
          T0(I) = INITIAL_CONDITION(X(I))
          T(I) = T0(I)
       END DO
-
-      {% if L_x_cond.kind == "First" %}
-      ! ГУ-1го рода на левой стороне по оси X
-      T(1) = {{ L_x_cond.func_name }}(TIME)
-      {% endif %}
-      {% if R_x_cond.kind == "First" %}
-      ! ГУ-1го рода на правой стороне по оси X
-      T(L1) = {{ R_x_cond.func_name }}(TIME)
-      {% endif %}
 
    END SUBROUTINE START
 !--------------------------------------------
@@ -69,7 +75,7 @@ CONTAINS
       {% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
 
       DO I = {{ start_inx }}, {{ end_inx }}
-         GAMI(I) = {{ code_model.Gam['x'] }} * (XU(I) - X(I - 1)) / (X(I) - X(I - 1))
+         GAMI(I) = {{ code_model.Gam['x'] }}
       END DO
 
       {# ! Для ГУ-2го рода
@@ -95,9 +101,11 @@ CONTAINS
    SUBROUTINE OUTPUT   ! Вывод данных в
 ! процессе расчета, вычисление ошибок.
       USE VAR
-      T(1) = T(2) - (X(2) - X(1))
+      {# Для ГУ-2го и 3го рода #}
+      {# T(1) = T(2) - (X(2) - X(1))
       T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
-              (1.+X(L1) - X(L2))
+              (1.+X(L1) - X(L2)) #}
+
       delT = 0.
       delT1 = 0.
       DO I = 1, L1
@@ -121,7 +129,7 @@ CONTAINS
       OPEN (UNIT=3, FILE='ALL.DAT', STATUS='UNKNOWN')
       WRITE (3, *) 'VARIABLES="X","T","Ta","delT", &
          "delT1"'
-      WRITE (3, *) 'ZONE I=12, F=POINT'
+      WRITE (3, *) 'ZONE I=7, F=POINT'
       DO I = 1, L1
          RET = FAN(X(I), TIME)
          WRITE (3, '(1P5E15.6)') &
@@ -144,6 +152,7 @@ PROGRAM COND1   ! Программа численного
       TIME = TIME + DT
       RMAX = 1.
       DO WHILE (RMAX > eps)
+         CALL BOUND_INIT
          T1 = T
          CALL DIF
          CALL TDMA
