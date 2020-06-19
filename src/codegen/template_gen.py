@@ -8,12 +8,12 @@ from models import codegen_problem, problem
 def gen_template(problem_sympy: problem.ProblemSympy):
     problem_codegen = codegen_problem.ProblemCodeGen(problem_sympy)
 
-    with open("templates/1dimension.jinja2", "r") as f:
+    with open("src/templates/1dimension.jinja2", "r") as f:
         template = f.read()
     jinja_template = jinja2.Template(template)
 
     template = jinja_template.render(code_model=problem_codegen)
 
-    with open("generated/fortran_solver.f95", "w") as fw:
+    with open("src/generated/fortran_solver.f95", "w") as fw:
         fw.write(template)
-    os.system("fprettify generated/fortran_solver.f95")
+    os.system("fprettify src/generated/fortran_solver.f95")
