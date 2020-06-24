@@ -2,16 +2,18 @@ import enum
 from typing import List
 
 import sympy
+from sympy.abc import t as time_axis
 
 
 @enum.unique
 class CoordinateSystem(enum.Enum):
-    X = "X"
+    # X = "X"  # not works for a while
     Xt = "Xt"
-    XY = "XY"
+    # XY = "XY"  # not works for a while
     XYt = "XYt"
-    RFi = "\u03A1\u03A6"
-    RFit = "\u03A1\u03A6t"
+
+    # RFi = "\u03A1\u03A6" # not works for a while
+    # RFit = "\u03A1\u03A6t" #
 
     @classmethod
     def with_time(cls) -> List["CoordinateSystem"]:
@@ -45,5 +47,11 @@ class CoordinateSystem(enum.Enum):
             raise ValueError(f"{str_value} is not CoordinateSystem")
         return coordinate_systems[0]
 
-    def to_vars(self) -> List[sympy.Symbol]:
+    def axises(self) -> List[sympy.Symbol]:
         return sympy.symbols(list(self.value.lower()))
+
+    def is_stationary(self) -> bool:
+        return any([axis == time_axis for axis in self.axises()])
+
+    def dimensions_count(self) -> int:
+        return len([axis for axis in self.axises() if axis != time_axis])

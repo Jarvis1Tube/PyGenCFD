@@ -222,7 +222,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.FormulasState = FormulasState.Pretty
 
     def HasAnalitycalChanched(self):
-        self.ui.AnalyticalSolutionGroup.isVisible(
+        self.ui.AnalyticalSolutionGroup.setVisible(
             self.ui.HasAnaliticalCheckBox.isChecked()
         )
 

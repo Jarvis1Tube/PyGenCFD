@@ -29,12 +29,18 @@ class BoundaryCondition:
     ):
         self.bound_side = bound_side
         self.kind = ConditionKind.First.name
+        self._set_axis_and_point(cond_eq, coords)
+        self._set_codegen_function_name()
+        self._set_function_code(cond_eq, coords)
 
-        coord_vars = coords.to_vars()
+    def _set_axis_and_point(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
+        coord_vars = coords.axises()
         self.axis, self.axis_point = None, None
+
         for i, arg in enumerate(cond_eq.lhs.args):
             if arg.is_constant():
                 self.axis = coord_vars[i]
+                # представление в Double в Fortran: 1d0
                 self.axis_point = f"{arg.evalf()}d0"
 
         if self.axis is None:
@@ -44,6 +50,7 @@ class BoundaryCondition:
                 "there is no constant in arguments"
             )
 
+    def _set_codegen_function_name(self):
         if self.axis == sympy.Symbol("t"):
             self.func_name = "INITIAL_CONDITION"
         else:
@@ -51,13 +58,14 @@ class BoundaryCondition:
                 f"{self.bound_side.name}_{str(self.axis).upper()}_CONDITION"
             )
 
-        [(f_name, f_code), (f_name, f_header)] = codegen(
+    def _set_function_code(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
+        [(file_name, func_code), (header_name, header_code)] = codegen(
             (self.func_name, cond_eq.rhs),  # .evalf() to double
             language="F95",
             header=False,
-            argument_sequence=[var for var in coord_vars if var != self.axis],
+            argument_sequence=[var for var in coords.axises() if var != self.axis],
         )
-        self.func_code = "! generated !\n" + f_code
+        self.func_code = "! generated !\n" + func_code
 
 
 class ProblemCodeGen:
@@ -73,7 +81,6 @@ class ProblemCodeGen:
     analytical_solution: Optional[str] = None
 
     def __init__(self, sympy_problem: problem.ProblemSympy):
-        self._equation_processing(sympy_problem)
         self.coordinate_system = sympy_problem.coordinate_system
         if sympy_problem.initial_condition is not None:
             self.initial_condition = BoundaryCondition(
@@ -87,23 +94,35 @@ class ProblemCodeGen:
             BoundaryCondition(bound_cond_sympy, self.coordinate_system, BoundSide.R)
             for bound_cond_sympy in sympy_problem.R_boundary_conditions
         ]
+        self._equation_processing(sympy_problem)
+        self._set_analytical_solution(sympy_problem)
 
+    def _set_analytical_solution(self, sympy_problem: problem.ProblemSympy):
         # fortran analytical_solution
-        [(f_name, f_code), (f_name, f_header)] = codegen(
-            ("FAN", sympy_problem.analytical_solution),  # .evalf() to double
+        analytical_formula = (
+            sympy_problem.analytical_solution
+            if sympy_problem.analytical_solution
+            else sympy.nan
+        )
+
+        [(file_name, func_code), (header_name, header_code)] = codegen(
+            ("FAN", analytical_formula),  # .evalf() to double
             language="F95",
             header=False,
-            argument_sequence=self.coordinate_system.to_vars(),
+            argument_sequence=self.coordinate_system.axises(),
         )
-        self.analytical_solution = "! generated !\n" + f_code
+        self.analytical_solution = "! generated !\n" + func_code
 
     def _equation_processing(self, sympy_problem: problem.ProblemSympy):
         equation = sympy_problem.equation
         self.Gam = {
-            str(du.variables[0]): equation.rhs.coeff(du).evalf()
+            str(du.variables[0]): equation.rhs.coeff(
+                du
+            ).evalf()  # TODO: support as function
             for du in equation.rhs.find(sympy.Derivative)
         }
-        if not sympy_problem.is_stationary:
+
+        if self.coordinate_system.is_stationary():
             try:
                 self.Rho = [
                     equation.rhs.coeff(du).evalf()

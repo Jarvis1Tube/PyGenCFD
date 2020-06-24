@@ -12,8 +12,6 @@ class ProblemStrs:
     L_boundary_conditions: List[str]
     R_boundary_conditions: List[str]
 
-    dimensions_count: int
-    is_stationary: bool
     coordinate_system: cs.CoordinateSystem
 
     initial_condition: Optional[str] = None
@@ -23,7 +21,10 @@ class ProblemStrs:
         if len(self.L_boundary_conditions) != len(self.R_boundary_conditions):
             raise ValueError("Boundary conditions lists must be the same size")
 
-        if self.is_stationary and self.initial_condition is None:
+        if (
+            not self.coordinate_system.is_stationary
+            and self.coordinate_system.initial_condition is None
+        ):
             raise ValueError(
                 "For non stationary problem initial conditions must be set"
             )
@@ -36,8 +37,6 @@ class ProblemSympy:
     initial_condition: Optional[sympy.Equality]
     analytical_solution: Optional[sympy.core.expr.Expr]
 
-    dimensions_count: int
-    is_stationary: bool
     coordinate_system: cs.CoordinateSystem
 
     def __init__(self, problem_strs: ProblemStrs):
@@ -59,8 +58,6 @@ class ProblemSympy:
                 problem_strs.analytical_solution
             )
 
-        self.dimensions_count = problem_strs.dimensions_count
-        self.is_stationary = problem_strs.is_stationary
         self.coordinate_system = problem_strs.coordinate_system
 
 
@@ -71,8 +68,6 @@ StrsModelsFromLabs = {
         R_boundary_conditions=["Eq(u(pi,t), 1)"],
         initial_condition="Eq(u(x,0), x/pi + 4*sin(3*x))",
         analytical_solution="x/pi + 4*E**(-9*t)*sin(3*x)",
-        dimensions_count=1,
-        is_stationary=False,
         coordinate_system=cs.CoordinateSystem.Xt,
     ),
     "5.8": ProblemStrs(
@@ -86,8 +81,6 @@ StrsModelsFromLabs = {
         R_boundary_conditions=["Eq(u(pi,y,t),0)", "Eq(Derivative(u(x,1,t), y), 1)"],
         initial_condition="Eq(u(x,y, 0), y)",
         analytical_solution="t*sin(x) + y",
-        dimensions_count=2,
-        is_stationary=False,
         coordinate_system=cs.CoordinateSystem.XYt,
     ),
 }
