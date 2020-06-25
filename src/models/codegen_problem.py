@@ -205,12 +205,6 @@ class ProblemCodeGen:
                 kx * sympy.Derivative(U_pattern, x_var, x_var) + Sp_ * U_pattern + Sc_,
             )
         )
-        equation.match(
-            Eq(
-                rc * Derivative(U_pattern, t),
-                kx * Derivative(U_pattern, x, x) + Sp_ * U_pattern + Sc_,
-            )
-        )
 
         self.Gam = {"x": res[kx]}
         self.Rho = res[rc]
