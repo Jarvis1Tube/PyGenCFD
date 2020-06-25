@@ -1,8 +1,10 @@
+import dataclasses
 import enum
-from typing import List, Optional
+from typing import *
 
 import sympy
 from sympy.abc import t
+from sympy.codegen.ast import Element
 from sympy.utilities.codegen import codegen
 
 from models import coordinate_systems as cs
@@ -20,28 +22,81 @@ class ConditionKind(enum.Enum):
     Third = "Third"
 
 
+def calc_in_point(expr, coords, use_U=False):
+    subs_vars = {}
+    for axis, index in zip(coords.axises(), coords.indexes()):
+        if axis == t:
+            continue
+        axis_name = f"{str(axis).upper()}" + ("U" if use_U else "")
+        subs_vars.update({axis: sympy.IndexedBase(axis_name)[index]})
+
+    T = sympy.IndexedBase("T")[coords.indexes()]
+    U_pattern = sympy.WildFunction("U_pattern", nargs=len(coords.axises()))
+    return expr.subs({t: "TIME", U_pattern: T, **subs_vars})
+
+
+def _to_fcode(expr):
+    return sympy.fcode(sympy.simplify(expr).evalf()).replace("\n", "").replace("@", "")
+
+
 class BoundaryCondition:
     def __init__(
-        self,
-        cond_eq: sympy.Equality,
-        coords: cs.CoordinateSystem,
-        bound_side: BoundSide,
+            self,
+            cond_eq: sympy.Equality,
+            coords: cs.CoordinateSystem,
+            bound_side: BoundSide,
     ):
         self.bound_side = bound_side
-        self.kind = ConditionKind.First.name
         self._set_axis_and_point(cond_eq, coords)
         self._set_codegen_function_name()
         self._set_function_code(cond_eq, coords)
+        if self.kind != ConditionKind.First.name:
+            self._bound_cond_2_3_kind(cond_eq, coords)
 
     def _set_axis_and_point(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
         coord_vars = coords.axises()
         self.axis, self.axis_point = None, None
 
-        for i, arg in enumerate(cond_eq.lhs.args):
+        U = sympy.Function("u")
+        u_entrances = list(cond_eq.find(U))
+        if len(u_entrances) != 1:
+            raise ValueError(
+                "Cannot contain different args in U for derivative and u function"
+            )
+
+        a1 = sympy.Wild("a1", properties=[lambda x: x.is_constant])
+        a2 = sympy.Wild("a2", properties=[lambda x: x.is_constant])
+        u_pow = sympy.Wild("u_pow", properties=[lambda x: x.is_constant])
+        axis = sympy.Wild("axis", properties=[lambda x: x.is_symbol])
+        U_pattern = sympy.WildFunction("U_pattern", nargs=len(coords.axises()))
+
+        res = cond_eq.lhs.match(
+            a1 * U_pattern ** u_pow + a2 * sympy.Derivative(U_pattern, axis)
+        )
+        if res is None:
+            raise ValueError(f"Cannot parse {cond_eq}")
+        self.a1 = res[a1]
+        self.a2 = res[a2]
+        u_with_args = res[U_pattern]
+
+        if self.a1 != 0 and self.a2 == 0:
+            self.kind = ConditionKind.First.name
+        elif self.a1 == 0 and self.a2 != 0:
+            self.kind = ConditionKind.Second.name
+        elif self.a1 != 0 and self.a2 != 0:
+            self.kind = ConditionKind.Third.name
+        else:
+            raise ValueError(
+                f"Left side of boundary condition: {cond_eq} does"
+                "not contain u function"
+            )
+
+        for i, arg in enumerate(u_with_args.args):
             if arg.is_constant():
                 self.axis = coord_vars[i]
                 # представление в Double в Fortran: 1d0
                 self.axis_point = f"{arg.evalf()}d0"
+                break
 
         if self.axis is None:
             raise ValueError(
@@ -49,6 +104,34 @@ class BoundaryCondition:
                 "Probably you did not specified U arguments or"
                 "there is no constant in arguments"
             )
+
+    def _bound_cond_2_3_kind(
+            self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem
+    ):
+        T_indexes = []
+        axis_inx, axis_h_inx = None, None
+        for axis, index in zip(coords.axises(), coords.indexes()):
+            if axis != self.axis:
+                T_indexes.append(index)
+            else:
+                axis_inx = 1 if self.bound_side == BoundSide.L else f"L1"
+                axis_h_inx = 2 if self.bound_side == BoundSide.L else f"L2"
+                T_indexes.append(axis_h_inx)
+        integral_coef = 1 if self.bound_side == BoundSide.R else -1
+
+        X = sympy.IndexedBase("X")
+        T = sympy.IndexedBase("T")[T_indexes]
+        cond_coef = 1 / (self.a2 - self.a1 * (X[axis_h_inx] - X[axis_inx]))
+
+        aps = -self.a1 * cond_coef * integral_coef
+        con = calc_in_point(cond_eq.rhs, coords) * cond_coef * integral_coef
+        if -self.a1 * integral_coef > 0:
+            con += aps * T
+            aps = sympy.simplify(0)
+
+        self.CON = _to_fcode(con)
+        self.APS = _to_fcode(aps)
+        self.T = _to_fcode(T - (aps * T + con) * (X[axis_h_inx] - X[axis_inx]))
 
     def _set_codegen_function_name(self):
         if self.axis == sympy.Symbol("t"):
@@ -58,14 +141,9 @@ class BoundaryCondition:
                 f"{self.bound_side.name}_{str(self.axis).upper()}_CONDITION"
             )
 
+    # First kind
     def _set_function_code(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
-        [(file_name, func_code), (header_name, header_code)] = codegen(
-            (self.func_name, cond_eq.rhs),  # .evalf() to double
-            language="F95",
-            header=False,
-            argument_sequence=[var for var in coords.axises() if var != self.axis],
-        )
-        self.func_code = "! generated !\n" + func_code
+        self.expression = _to_fcode(calc_in_point(cond_eq.rhs, coords))
 
 
 class ProblemCodeGen:
@@ -115,19 +193,42 @@ class ProblemCodeGen:
 
     def _equation_processing(self, sympy_problem: problem.ProblemSympy):
         equation = sympy_problem.equation
-        self.Gam = {
-            str(du.variables[0]): equation.rhs.coeff(
-                du
-            ).evalf()  # TODO: support as function
-            for du in equation.rhs.find(sympy.Derivative)
-        }
+        coords = sympy_problem.coordinate_system
 
-        if self.coordinate_system.is_stationary():
-            try:
-                self.Rho = [
-                    equation.rhs.coeff(du).evalf()
-                    for du in equation.lhs.find(sympy.Derivative)
-                    if t in du.variables
-                ][0]
-            except IndexError:
-                raise ValueError("No derivative by time in equation")
+        rc, kx, Sp_, Sc_ = sympy.symbols("rc,kx,Sp,Sc", cls=sympy.Wild)
+        U_pattern = sympy.WildFunction("U_pattern", nargs=len(coords.axises()))
+        x_var = sympy.Symbol("x")
+
+        res = equation.match(
+            sympy.Eq(
+                rc * sympy.Derivative(U_pattern, t),
+                kx * sympy.Derivative(U_pattern, x_var, x_var) + Sp_ * U_pattern + Sc_,
+            )
+        )
+        equation.match(
+            Eq(
+                rc * Derivative(U_pattern, t),
+                kx * Derivative(U_pattern, x, x) + Sp_ * U_pattern + Sc_,
+            )
+        )
+
+        self.Gam = {"x": res[kx]}
+        self.Rho = res[rc]
+
+        xu_i = sympy.Symbol("I")
+        XU = sympy.IndexedBase("XU")
+        DT = sympy.Symbol("DT")
+        T = sympy.IndexedBase("T")[xu_i]
+
+        Sc = sympy.integrate(res[Sc_], (x_var, XU[xu_i], XU[xu_i + 1]))
+        Sc = sympy.integrate(Sc, (t, "TIME", "TIME+DT")) / DT
+
+        Sp = sympy.integrate(res[Sp_], (x_var, XU[xu_i], XU[xu_i + 1]))
+        Sp = sympy.integrate(Sp, (t, "TIME", "TIME+DT")) / DT
+
+        if res[Sp_].is_constant() and res[Sp_] > 0:
+            Sc += Sp * T
+            Sp = sympy.simplify(0)
+
+        self.Sp = _to_fcode(sympy.simplify(calc_in_point(Sp, coords, use_U=True)))
+        self.Sc = _to_fcode(sympy.simplify(calc_in_point(Sc, coords, use_U=True)))

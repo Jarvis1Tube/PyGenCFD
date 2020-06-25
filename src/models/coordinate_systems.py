@@ -51,7 +51,10 @@ class CoordinateSystem(enum.Enum):
         return sympy.symbols(list(self.value.lower()))
 
     def is_stationary(self) -> bool:
-        return any([axis == time_axis for axis in self.axises()])
+        return not any([axis == time_axis for axis in self.axises()])
 
     def dimensions_count(self) -> int:
         return len([axis for axis in self.axises() if axis != time_axis])
+
+    def indexes(self):
+        return list(sympy.symbols("i,j,k"))[: self.dimensions_count()]

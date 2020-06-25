@@ -24,101 +24,107 @@ MODULE USER  ! Модуль содержит процедуры,
 ! пользователя.
 CONTAINS
 !--------------------------------------------
-   {{ code_model.analytical_solution }}
+{{ code_model.analytical_solution }}
 
-   {{ code_model.initial_condition.func_code }}
+{{ code_model.initial_condition.func_code }}
 
-    {% if L_x_cond.kind == "First" %}
-        {{ L_x_cond.func_code }}
-    {% endif %}
-    {% if R_x_cond.kind == "First" %}
-        {{ R_x_cond.func_code }}
-    {% endif %}
 !--------------------------------------------
-   SUBROUTINE BOUND_INIT
-      USE VAR
-   {% if L_x_cond.kind == "First" %}
-      ! ГУ-1го рода на левой стороне по оси X
-      T(1) = {{ L_x_cond.func_name }}(TIME)
-   {% endif %}
+SUBROUTINE BOUND_INIT
+USE VAR
+{% if L_x_cond.kind == "First" %}
+    ! ГУ-1го рода на левой стороне по оси X
+    T(1) = {{ L_x_cond.expression }}
+{% endif %}
 
-   {% if R_x_cond.kind == "First" %}
-      ! ГУ-1го рода на правой стороне по оси X
-      T(L1) = {{ R_x_cond.func_name }}(TIME)
-   {% endif %}
+{% if R_x_cond.kind == "First" %}
+    ! ГУ-1го рода на правой стороне по оси X
+    T(L1) = {{ R_x_cond.expression }}
+{% endif %}
 
-   END SUBROUTINE BOUND_INIT
+{% if L_x_cond.kind != "First" %}
+    ! ГУ-2-3го рода на правой стороне по оси X
+    T(1) = {{ L_x_cond.T }}
+{% endif %}
+{% if R_x_cond.kind != "First" %}
+    ! ГУ-2-3го рода на правой стороне по оси X
+    T(L1) = {{ R_x_cond.T }}
+{% endif %}
 
-   SUBROUTINE START  ! Задаются параметры
+END SUBROUTINE BOUND_INIT
+
+SUBROUTINE START  ! Задаются параметры
 ! задачи, начальные условия и стационарные
 ! граничные условия первого рода.
-      USE VAR
-      XL = {{ L_x_cond.axis_point }}; XLR = {{ R_x_cond.axis_point }}
-      CALL GRID(L1, L2, XL, XLR, XU, X)
-      TIME = {{ code_model.initial_condition.axis_point }}; DT = 0.1
-      DO I = 1, L1
-         T0(I) = INITIAL_CONDITION(X(I))
-         T(I) = T0(I)
-      END DO
+USE VAR
+XL = {{ L_x_cond.axis_point }}; XLR = {{ R_x_cond.axis_point }}
+CALL GRID(L1, L2, XL, XLR, XU, X)
+TIME = {{ code_model.initial_condition.axis_point }}; DT = 0.1
 
-   END SUBROUTINE START
+DO I = 1, L1
+T0(I) = {{ code_model.initial_condition.expression }}
+T(I) = T0(I)
+END DO
+
+END SUBROUTINE START
 !--------------------------------------------
-   SUBROUTINE GAMSOR   ! Задаются плотность,
+SUBROUTINE GAMSOR   ! Задаются плотность,
 ! теплопроводность, источниковый член и
 ! граничные условия.
-      USE VAR
-      {# ! правая сторона ГУ-2 го рода #}
-      {# T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
-              (1.+X(L1) - X(L2)) #}
+USE VAR
 
-      {% set start_inx = 2 if L_x_cond.kind == "First" else 3 %}
-      {% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
+{% set start_inx = 2 if L_x_cond.kind == "First" else 3 %}
+{% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
 
-      DO I = {{ start_inx }}, {{ end_inx }}
-         GAMI(I) = {{ code_model.Gam['x'] }}
-      END DO
+DO I = {{ start_inx }}, {{ end_inx }}
+GAMI(I) = {{ code_model.Gam['x'] }}
+END DO
 
-      {# ! Для ГУ-2го рода
-      GAMI(2) = 0.
-      GAMI(L1) = 0. #}
 
-      DO I = 2, L2
-         CON(I) = 0.
-         APS(I) = 0.
-         RHO(I) = 1.
-      END DO
+DO I = 2, L2
+APS(I) = {{ code_model.Sp }}
 
-{#      ! левая сторона ГУ-2 го рода#}
-{#      CON(2) = (X(2) - X(1))#}
-{#      APS(2) = -1.#}
+CON(I) = {{ code_model.Sc }}
 
-{#      ! правая сторона ГУ-2 го рода#}
-{#      CON(L2) = T(L1)*(3.+TIME)/(1.+X(L1) - X(L2))#}
-{#      APS(L2) = -T(L1)/(1.+X(L1) - X(L2))#}
+RHO(I) = {{ code_model.Rho }}
+END DO
 
-   END SUBROUTINE GAMSOR
+{% if L_x_cond.kind != "First" %}
+    ! ГУ-2-3го рода на левой стороне по оси X
+    GAMI(2) = 0
+    {% if L_x_cond.CON.strip() != "0" %} CON(2) = CON(2) + {{ L_x_cond.CON }}{% endif %}
+    {% if L_x_cond.APS.strip() != "0" %} APS(2) = APS(2) + {{ L_x_cond.APS }}{% endif %}
+
+{% endif %}
+
+{% if R_x_cond.kind != "First" %}
+    ! ГУ-2-3го рода на правой стороне по оси X
+    GAMI(L1) = 0
+    {% if R_x_cond.CON.strip() != "0" %} CON(L2) = CON(L2) +
+        {{ R_x_cond.CON }}{% endif %}
+    {% if R_x_cond.APS.strip() != "0" %} APS(L2) = APS(L2) +
+        {{ R_x_cond.APS }}{% endif %}
+
+{% endif %}
+
+END SUBROUTINE GAMSOR
 !--------------------------------------------
-   SUBROUTINE OUTPUT   ! Вывод данных в
+SUBROUTINE OUTPUT   ! Вывод данных в
 ! процессе расчета, вычисление ошибок.
-      USE VAR
-      {# Для ГУ-2го и 3го рода #}
-      {# T(1) = T(2) - (X(2) - X(1))
-      T(L1) = (T(L2) + (3.+TIME)*(X(L1) - X(L2)))/ &
-              (1.+X(L1) - X(L2)) #}
+USE VAR
 
-      delT = 0.
-      delT1 = 0.
-      DO I = 1, L1
-         RET = DABS(T(I) - FAN(X(I), TIME))
-         delT = DMAX1(delT, RET)
-         delT1 = DMAX1(delT1, &
-                       100.*RET/DABS(FAN(X(I), TIME)))
-      END DO
-      WRITE (*, 1)
-      WRITE (1, 1)
+delT = 0.
+delT1 = 0.
+DO I = 1, L1
+RET = DABS(T(I) - FAN(X(I), TIME))
+delT = DMAX1(delT, RET)
+delT1 = DMAX1(delT1, &
+100.*RET/DABS(FAN(X(I), TIME)))
+END DO
+WRITE (*, 1)
+WRITE (1, 1)
 1     FORMAT(5X'TIME', 12X, 'T(5)', 12X, &
-             'TAN(5)', 13X, 'delT', 13X, 'delT1')
-      WRITE (*, 2) TIME, T(5), FAN(X(5), TIME), delT, delT1
+'TAN(5)', 13X, 'delT', 13X, 'delT1')
+WRITE (*, 2) TIME, T(5), FAN(X(5), TIME), delT, delT1
       WRITE (1, 2) TIME, T(5), FAN(X(5), TIME), delT, delT1
 2     FORMAT(1P5E16.6)
    END SUBROUTINE OUTPUT

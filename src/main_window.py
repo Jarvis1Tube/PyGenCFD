@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._setup_variables()
 
     def _setup_variables(self):
-        self.strs_problem_model = problem.StrsModelsFromLabs["1.1"]
+        self.strs_problem_model = problem.StrsModelsFromLabs["2.1"]
         self.FormulasState = FormulasState.Undefined
         self.ShowTextAction()
 
@@ -43,11 +43,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.EquationText.setPlainText(val)
 
     @property
-    def CurrentCoordinateSystem(self) -> Optional[cs.CoordinateSystem]:
+    def CoordinateSystem(self) -> Optional[cs.CoordinateSystem]:
         current_cs = self.ui.CoordinateSystemCombo.currentText()
         if not current_cs:
             return None
         return cs.CoordinateSystem.from_str(current_cs)
+
+    @CoordinateSystem.setter
+    def CoordinateSystem(self, val: cs.CoordinateSystem):
+        self.ui.IsStationaryCheckBox.setChecked(val.is_stationary())
+        self.ui.DimensionsCountSpin.setValue(val.dimensions_count())
+        cords_systems = cs.CoordinateSystem.filtered(
+            is_stationary=val.is_stationary(), dimensions_count=val.dimensions_count()
+        )
+        current_cs = self.ui.CoordinateSystemCombo.setCurrentIndex(
+            cords_systems.index(val)
+        )
 
     @property
     def DimensionCount(self):
@@ -159,8 +170,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.HasAnaliticalCheckBox.stateChanged.connect(self.HasAnalitycalChanched)
 
     def SetUpBoundaryConditions(self):
-        if self.CurrentCoordinateSystem:
-            self._GenConditionsPlaceHolders(self.CurrentCoordinateSystem)
+        if self.CoordinateSystem:
+            self._GenConditionsPlaceHolders(self.CoordinateSystem)
         self.ui.InitialConditionGroup.setVisible(not self.IsStationary)
 
     def SetUpCoordinateSystemCombo(self):
@@ -192,6 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.LBoundaryConditions = self.strs_problem_model.L_boundary_conditions
         self.RBoundaryConditions = self.strs_problem_model.R_boundary_conditions
         self.AnalyticalSolution = self.strs_problem_model.analytical_solution
+        self.CoordinateSystem = self.strs_problem_model.coordinate_system
 
         self.FormulasState = FormulasState.Text
 
@@ -267,6 +279,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.strs_problem_model.L_boundary_conditions = self.LBoundaryConditions
         self.strs_problem_model.R_boundary_conditions = self.RBoundaryConditions
         self.strs_problem_model.analytical_solution = self.AnalyticalSolution
+        self.strs_problem_model.coordinate_system = self.CoordinateSystem
 
     #  endregion UI logic
 

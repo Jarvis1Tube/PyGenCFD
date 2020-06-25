@@ -70,12 +70,36 @@ StrsModelsFromLabs = {
         analytical_solution="x/pi + 4*E**(-9*t)*sin(3*x)",
         coordinate_system=cs.CoordinateSystem.Xt,
     ),
+    "2.1": ProblemStrs(
+        equation="Eq(Derivative(u(x,t), t), Derivative(u(x,t), x, x) - u(x,t) + 1)",
+        L_boundary_conditions=["Eq(Derivative(u(0,t), x) - u(0,t), -1)"],
+        R_boundary_conditions=["Eq(Derivative(u(1,t),x), E**(-t))"],
+        initial_condition="Eq(u(x,0), x + 2)",
+        analytical_solution="E**(-t)*(x+1) + 1",
+        coordinate_system=cs.CoordinateSystem.Xt,
+    ),
+    "2.3": ProblemStrs(
+        equation="Eq(Derivative(u(x,t), t), Derivative(u(x,t), x, x) - 2*u(x,t) -2*x - 2)",
+        L_boundary_conditions=["Eq(Derivative(u(0,t), x) - u(0,t), 0)"],
+        R_boundary_conditions=["Eq(Derivative(u(1,t),x), E**(1-t) - 1)"],
+        initial_condition="Eq(u(x,0), E**x -x - 1)",
+        analytical_solution="E**(x-t) - x - 1",
+        coordinate_system=cs.CoordinateSystem.Xt,
+    ),
+    "2.6": ProblemStrs(
+        equation="Eq(Derivative(u(x,t), t), Derivative(u(x,t), x, x) + u(x,t) + cos(t)*sin(x))",
+        L_boundary_conditions=["Eq(u(0,t), 0)"],
+        R_boundary_conditions=["Eq(Derivative(u(pi,t),x) + u(pi,t), -sin(t))"],
+        initial_condition="Eq(u(x,0), 0)",
+        analytical_solution="sin(t)*sin(x)",
+        coordinate_system=cs.CoordinateSystem.Xt,
+    ),
     "5.8": ProblemStrs(
         equation="Eq(Derivative(u(x,y,t), t), Derivative(u(x,y,t), x, x)"
-        " + Derivative(Derivative(u(x,y,t), y)*y*sin(x), y)"
-        " + u(x, y, t) - y)",
+                 " + Derivative(Derivative(u(x,y,t), y)*y*sin(x), y)"
+                 " + u(x, y, t) - y)",
         L_boundary_conditions=[
-            "Eq(Derivative(u(0,y,t), x), u(0, y, t)**4 + t - y**4)",
+            "Eq(Derivative(u(0,y,t), x) - u(0, y, t)**4, t - y**4)",
             "Eq(Derivative(u(x,0,t), y), 1)",
         ],
         R_boundary_conditions=["Eq(u(pi,y,t),0)", "Eq(Derivative(u(x,1,t), y), 1)"],

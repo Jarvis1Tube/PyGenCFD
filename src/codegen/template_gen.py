@@ -16,4 +16,4 @@ def gen_template(problem_sympy: problem.ProblemSympy):
 
     with open("src/generated/fortran_solver.f95", "w") as fw:
         fw.write(template)
-    os.system("fprettify src/generated/fortran_solver.f95")
+    os.system("fprettify src/generated/fortran_solver.f95 -l 132")
