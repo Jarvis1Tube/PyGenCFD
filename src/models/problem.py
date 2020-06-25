@@ -104,8 +104,8 @@ StrsModelsFromLabs = {
     ),
     "5.8": ProblemStrs(
         equation="Eq(Derivative(u(x,y,t), t), Derivative(u(x,y,t), x, x)"
-                 " + Derivative(Derivative(u(x,y,t), y)*y*sin(x), y)"
-                 " + u(x, y, t) - y)",
+        " + Derivative(Derivative(u(x,y,t), y)*y*sin(x), y)"
+        " + u(x, y, t) - y)",
         L_boundary_conditions=[
             "Eq(Derivative(u(0,y,t), x) - u(0, y, t)**4, t - y**4)",
             "Eq(Derivative(u(x,0,t), y), 1)",

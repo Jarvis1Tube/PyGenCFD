@@ -41,10 +41,10 @@ def _to_fcode(expr):
 
 class BoundaryCondition:
     def __init__(
-            self,
-            cond_eq: sympy.Equality,
-            coords: cs.CoordinateSystem,
-            bound_side: BoundSide,
+        self,
+        cond_eq: sympy.Equality,
+        coords: cs.CoordinateSystem,
+        bound_side: BoundSide,
     ):
         self.bound_side = bound_side
         self._set_axis_and_point(cond_eq, coords)
@@ -107,7 +107,7 @@ class BoundaryCondition:
             )
 
     def _bound_cond_2_3_kind(
-            self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem
+        self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem
     ):
         T_indexes = []
         axis_inx, axis_h_inx = None, None
@@ -169,8 +169,8 @@ class ProblemCodeGen:
         self.L1 = sympy.fcode(
             sympy.ceiling(
                 (
-                        self.R_boundary_conditions[0]._axis_point
-                        - self.L_boundary_conditions[0]._axis_point
+                    self.R_boundary_conditions[0]._axis_point
+                    - self.L_boundary_conditions[0]._axis_point
                 )
                 / sympy_problem.grid_params.x_step
             )

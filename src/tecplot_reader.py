@@ -65,7 +65,7 @@ def read_tecplot(filename, verbose):
                 print("Title on line " + str(header_lines) + ": " + str(title_line))
             mode = 0
         elif (
-                var_match >= 0
+            var_match >= 0
         ):  # match lines starting with variable keyword, add the following var names to list
             header_lines += 1
             # split and get words enclosed by double quotations, return only the odd elements
@@ -82,7 +82,7 @@ def read_tecplot(filename, verbose):
         elif zone_match >= 0:
             if mode == 3:  # that is, if we have been reading a previous zone
                 if (
-                        struct == 1
+                    struct == 1
                 ):  # only if we had no nodes or other info, otherwise we'd add double the amount of DFs
                     if verbose:
                         print
@@ -170,7 +170,7 @@ def read_tecplot(filename, verbose):
                 continue  # finished reading data, now doing elements
 
         elif mode == 2 and is_number(
-                line.split()[0]
+            line.split()[0]
         ):  # this is true if we are below the ZONE keyword and at a data line
             mode = 3
             if verbose:
@@ -179,7 +179,7 @@ def read_tecplot(filename, verbose):
             data.append(line.split())
 
         elif (
-                mode == 1
+            mode == 1
         ):  # lines between VARIABLES and ZONE keywords: these may be additional variables or AUXDATA
             if verbose:
                 print("More variables on line " + str(header_lines) + ": " + str(line))
