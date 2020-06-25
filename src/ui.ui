@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>933</width>
+    <width>976</width>
     <height>1075</height>
    </rect>
   </property>
@@ -325,7 +325,7 @@
        <item>
         <widget class="QFrame" name="UniformGridGroup">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
@@ -336,6 +336,9 @@
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
            <widget class="QCheckBox" name="UniformGridCheckBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="font">
              <font>
               <family>Courier</family>
@@ -346,10 +349,22 @@
             <property name="text">
              <string>Равномерная сетка</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <property name="tristate">
+             <bool>false</bool>
+            </property>
            </widget>
           </item>
           <item>
            <widget class="QFrame" name="UniformGridSubGroup">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -359,6 +374,9 @@
             <layout class="QGridLayout" name="gridLayout_2">
              <item row="0" column="0">
               <widget class="QLabel" name="XGridStepLabel">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="font">
                 <font>
                  <family>Courier</family>
@@ -373,13 +391,28 @@
              </item>
              <item row="0" column="1">
               <widget class="QDoubleSpinBox" name="XGridStepSpin">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>8</number>
+               </property>
                <property name="maximum">
                 <double>9999.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.000001000000000</double>
+               </property>
+               <property name="value">
+                <double>0.050000000000000</double>
                </property>
               </widget>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="tGridStepLabel">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="font">
                 <font>
                  <family>Courier</family>
@@ -394,8 +427,20 @@
              </item>
              <item row="1" column="1">
               <widget class="QDoubleSpinBox" name="tGridStepSpin">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>8</number>
+               </property>
                <property name="maximum">
                 <double>9999.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.000001000000000</double>
+               </property>
+               <property name="value">
+                <double>0.100000000000000</double>
                </property>
               </widget>
              </item>
@@ -483,6 +528,20 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="CodeRunButton">
+            <property name="text">
+             <string>Запустить</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="GraphsShowButton">
+            <property name="text">
+             <string>Показать графики</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -509,7 +568,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>933</width>
+     <width>976</width>
      <height>22</height>
     </rect>
    </property>

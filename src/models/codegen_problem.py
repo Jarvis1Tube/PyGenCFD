@@ -48,10 +48,11 @@ class BoundaryCondition:
     ):
         self.bound_side = bound_side
         self._set_axis_and_point(cond_eq, coords)
-        self._set_codegen_function_name()
-        self._set_function_code(cond_eq, coords)
+
         if self.kind != ConditionKind.First.name:
             self._bound_cond_2_3_kind(cond_eq, coords)
+        else:
+            self._set_function_code(cond_eq, coords)
 
     def _set_axis_and_point(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
         coord_vars = coords.axises()
@@ -94,8 +95,8 @@ class BoundaryCondition:
         for i, arg in enumerate(u_with_args.args):
             if arg.is_constant():
                 self.axis = coord_vars[i]
-                # представление в Double в Fortran: 1d0
-                self.axis_point = f"{arg.evalf()}d0"
+                self.axis_point = sympy.fcode(arg.evalf())
+                self._axis_point = arg
                 break
 
         if self.axis is None:
@@ -133,14 +134,6 @@ class BoundaryCondition:
         self.APS = _to_fcode(aps)
         self.T = _to_fcode(T - (aps * T + con) * (X[axis_h_inx] - X[axis_inx]))
 
-    def _set_codegen_function_name(self):
-        if self.axis == sympy.Symbol("t"):
-            self.func_name = "INITIAL_CONDITION"
-        else:
-            self.func_name = (
-                f"{self.bound_side.name}_{str(self.axis).upper()}_CONDITION"
-            )
-
     # First kind
     def _set_function_code(self, cond_eq: sympy.Equality, coords: cs.CoordinateSystem):
         self.expression = _to_fcode(calc_in_point(cond_eq.rhs, coords))
@@ -154,6 +147,7 @@ class ProblemCodeGen:
     # dimensions_count: int
     # is_stationary: bool
     coordinate_system: cs.CoordinateSystem
+    grid_params: problem.GridParams
 
     initial_condition: Optional[BoundaryCondition] = None
     analytical_solution: Optional[str] = None
@@ -172,6 +166,17 @@ class ProblemCodeGen:
             BoundaryCondition(bound_cond_sympy, self.coordinate_system, BoundSide.R)
             for bound_cond_sympy in sympy_problem.R_boundary_conditions
         ]
+        self.L1 = sympy.fcode(
+            sympy.ceiling(
+                (
+                        self.R_boundary_conditions[0]._axis_point
+                        - self.L_boundary_conditions[0]._axis_point
+                )
+                / sympy_problem.grid_params.x_step
+            )
+        )
+        self.DT = sympy.fcode(sympy_problem.grid_params.t_step)
+
         self._equation_processing(sympy_problem)
         self._set_analytical_solution(sympy_problem)
 
@@ -206,7 +211,7 @@ class ProblemCodeGen:
             )
         )
 
-        self.Gam = {"x": res[kx]}
+        self.GamX = res[kx]
         self.Rho = res[rc]
 
         xu_i = sympy.Symbol("I")

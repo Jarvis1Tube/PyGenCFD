@@ -7,6 +7,12 @@ import models.coordinate_systems as cs
 
 
 @dataclasses.dataclass
+class GridParams:
+    x_step: float
+    t_step: float
+
+
+@dataclasses.dataclass
 class ProblemStrs:
     equation: str
     L_boundary_conditions: List[str]
@@ -38,8 +44,9 @@ class ProblemSympy:
     analytical_solution: Optional[sympy.core.expr.Expr]
 
     coordinate_system: cs.CoordinateSystem
+    grid_params: GridParams
 
-    def __init__(self, problem_strs: ProblemStrs):
+    def __init__(self, problem_strs: ProblemStrs, grid_params: GridParams):
         self.equation = sympy.parse_expr(problem_strs.equation)
         self.L_boundary_conditions = [
             sympy.parse_expr(bound_condition)
@@ -59,6 +66,7 @@ class ProblemSympy:
             )
 
         self.coordinate_system = problem_strs.coordinate_system
+        self.grid_params = grid_params
 
 
 StrsModelsFromLabs = {

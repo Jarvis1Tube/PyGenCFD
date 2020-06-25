@@ -1,7 +1,10 @@
 import enum
 import logging
+import os
+import sys
 from typing import List, Optional, Tuple
 
+import matplotlib.pyplot as plt
 import sympy
 from PyQt5 import QtCore, QtWidgets
 
@@ -10,6 +13,7 @@ from generated.UI import Ui_MainWindow
 import models.coordinate_systems as cs
 from codegen.template_gen import gen_template
 from models import problem
+from tecplot_reader import read_tecplot
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +172,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.ShowTextMenuButton.triggered.connect(self.ShowTextAction)
         self.ui.ShowPrettyMenuButton.triggered.connect(self.ShowPrettyAction)
         self.ui.HasAnaliticalCheckBox.stateChanged.connect(self.HasAnalitycalChanched)
+        self.ui.CodeRunButton.clicked.connect(self.RunCode)
+        self.ui.GraphsShowButton.clicked.connect(self.ShowGraphs)
 
     def SetUpBoundaryConditions(self):
         if self.CoordinateSystem:
@@ -240,8 +246,72 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def GenerateCode(self):
         self._UpdateStrsProblemModel()
-        sympy_model = problem.ProblemSympy(self.strs_problem_model)
-        gen_template(sympy_model)
+        grid_params = problem.GridParams(
+            x_step=self.ui.XGridStepSpin.value(), t_step=self.ui.tGridStepSpin.value()
+        )
+        sympy_model = problem.ProblemSympy(self.strs_problem_model, grid_params)
+        try:
+            gen_template(sympy_model)
+        except Exception as err:
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Warning)
+            mbox.setText(str(err))
+        else:
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Information)
+            mbox.setText(f"Program successfully generated.")
+        mbox.show()
+
+    def RunCode(self):
+        code_file = os.path.abspath("./src/generated/fortran_solver.f95")
+        if not os.path.exists(code_file):
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Warning)
+            mbox.setText(
+                f"Cannot find file {code_file}. May be you didn't run code generation."
+            )
+            mbox.show()
+        status = os.system(f"cd ./src/generated/ && gfortran {code_file} && ./a.out")
+        if status == 0:
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Information)
+            mbox.setText(f"Program successfully finished.")
+        else:
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Warning)
+            mbox.setText(f"Program failed.")
+        mbox.show()
+
+    def ShowGraphs(self):
+        ALL_DAT = os.path.abspath("./src/generated/ALL.DAT")
+        if not os.path.exists(ALL_DAT):
+            mbox = QtWidgets.QMessageBox(self)
+            mbox.setIcon(mbox.Warning)
+            mbox.setText(f"Cannot find file {ALL_DAT}. May be you didn't run code.")
+            mbox.show()
+
+        data = read_tecplot(ALL_DAT, verbose=False)[1][0]
+
+        fig, (ax1, ax2, ax3) = plt.subplots(
+            1, 3, figsize=(12, 4),  # gridspec_kw={"wspace": 0.35}
+        )
+        ax1.plot(data["X"], data["T"])
+        ax1.set_title("Численное решение")
+        ax1.set_xlabel("X")
+        ax1.set_ylabel("Т (поле температуры)")
+
+        ax2.plot(data["X"], data["Ta"])
+        ax2.set_title("Аналитическое решение")
+        ax2.set_xlabel("X")
+        ax2.set_ylabel("Тa (аналитика)")
+
+        ax3.plot(data["X"], (data["T"] - data["Ta"]).abs())
+        ax3.set_title("Абсолютная погрешность")
+        ax3.set_xlabel("X")
+        ax3.set_ylabel("|T - Ta|")
+        plt.tight_layout()
+
+        plt.show()
 
     # endregion Events
 

@@ -1,20 +1,19 @@
-
 {% set L_x_cond = code_model.L_boundary_conditions[0] %}
 {% set R_x_cond = code_model.R_boundary_conditions[0] %}
 
 MODULE VAR   ! Глобальные переменные доступны
 ! всем программным единицам, использующим
 ! данный модуль.
-   IMPLICIT NONE
-   INTEGER, PARAMETER :: L1 = 21
-   REAL(8), PARAMETER :: eps = 1.D-4, alltime = 10.
-   INTEGER I, L2
-   REAL(8) TIME, DT, DX, XL, XLR, delT, &
-      delT1, AP0, RMAX, RET
-   REAL(8) X(L1), XU(L1)
-   REAL(8) T(L1), T1(L1), T0(L1), &
-      RHO(L1), GAMI(L1), CON(L1), APS(L1), AIP(L1), &
-      AIM(L1), AP(L1), B(L1)
+IMPLICIT NONE
+INTEGER, PARAMETER :: L1 = {{ code_model.L1 }}
+REAL(8), PARAMETER :: eps = 1.D-4, alltime = 10.
+INTEGER I, L2
+REAL(8) TIME, DT, DX, XL, XLR, delT, &
+delT1, AP0, RMAX, RET
+REAL(8) X(L1), XU(L1)
+REAL(8) T(L1), T1(L1), T0(L1), &
+RHO(L1), GAMI(L1), CON(L1), APS(L1), AIP(L1), &
+AIM(L1), AP(L1), B(L1)
 END MODULE VAR
 
 !============================================
@@ -58,7 +57,7 @@ SUBROUTINE START  ! Задаются параметры
 USE VAR
 XL = {{ L_x_cond.axis_point }}; XLR = {{ R_x_cond.axis_point }}
 CALL GRID(L1, L2, XL, XLR, XU, X)
-TIME = {{ code_model.initial_condition.axis_point }}; DT = 0.1
+TIME = {{ code_model.initial_condition.axis_point }}; DT = {{ code_model.DT }}
 
 DO I = 1, L1
 T0(I) = {{ code_model.initial_condition.expression }}
@@ -76,7 +75,7 @@ USE VAR
 {% set end_inx = 'L1' if R_x_cond.kind == "First" else 'L2' %}
 
 DO I = {{ start_inx }}, {{ end_inx }}
-GAMI(I) = {{ code_model.Gam['x'] }}
+GAMI(I) = {{ code_model.GamX }}
 END DO
 
 
